@@ -26,8 +26,8 @@ print("loading annotations")
 annotations = json.load(open(os.path.join(ANN_DIR, "instances_all.json"), "r"))
 print("successfully loaded annotations")
 
-train_json = {"images": [], "annotations": []}
-val_json = {"images": [], "annotations": []}
+train_json = {"images": [], "annotations": [], "categories": []}
+val_json = {"images": [], "annotations": [], "categories": []}
 
 def get_filename(file):
     return file["file_name"]
@@ -66,6 +66,9 @@ for _, ann in tqdm(enumerate(annotations["annotations"]), total=len(annotations[
 
 print(len(train_json["images"]), len(train_json["annotations"]))
 print(len(val_json["images"]), len(val_json["annotations"]))
+
+train_json["categories"] = annotations["categories"]
+val_json["categories"] = annotations["categories"]
 
 with open(TARGET_DIR + "/annotations/instances_train.json", "w") as f:
     json.dump(train_json, f)
