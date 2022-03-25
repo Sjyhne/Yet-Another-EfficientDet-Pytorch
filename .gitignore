@@ -132,3 +132,6 @@ weights/
 
 datasets*
 coco
+logs/
+*.pth
+val_bbox_results.json
