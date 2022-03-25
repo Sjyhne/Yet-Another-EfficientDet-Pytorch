@@ -43,8 +43,8 @@ if os.path.exists(os.path.join(TARGET_DIR, "train")):
 if os.path.exists(os.path.join(TARGET_DIR, "val")):
     shutil.rmtree(os.path.join(TARGET_DIR, "val"))
 
-os.mkdir(os.path.join(TARGET_DIR, "train"))
-os.mkdir(os.path.join(TARGET_DIR, "val"))
+os.makedirs(os.path.join(TARGET_DIR, "train"))
+os.makedirs(os.path.join(TARGET_DIR, "val"))
 
 for _, ann in tqdm(enumerate(annotations["images"]), total=len(annotations["annotations"])):
     if ann["file_name"] in train:
@@ -66,6 +66,16 @@ for _, ann in tqdm(enumerate(annotations["annotations"]), total=len(annotations[
 
 print(len(train_json["images"]), len(train_json["annotations"]))
 print(len(val_json["images"]), len(val_json["annotations"]))
+
+train_json["categories"] = annotations["categories"]
+val_json["categories"] = annotations["categories"]
+
+if os.path.exists(os.path.join(TARGET_DIR, "annotations")):
+    shutil.rmtree(os.path.join(TARGET_DIR, "annotations"))
+
+print(os.path.join(TARGET_DIR, "annotations"))    
+
+os.makedirs(os.path.join(TARGET_DIR, "annotations"))
 
 with open(TARGET_DIR + "/annotations/instances_train.json", "w") as f:
     json.dump(train_json, f)

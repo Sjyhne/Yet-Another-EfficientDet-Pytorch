@@ -14,6 +14,8 @@ class CocoDataset(Dataset):
         self.set_name = set
         self.transform = transform
 
+        print(os.path.join(self.root_dir, 'annotations', 'instances_' + self.set_name + '.json'))
+        
         self.coco = COCO(os.path.join(self.root_dir, 'annotations', 'instances_' + self.set_name + '.json'))
         self.image_ids = self.coco.getImgIds()
 
@@ -22,6 +24,7 @@ class CocoDataset(Dataset):
     def load_classes(self):
 
         # load class names (name -> label)
+        print(self.coco)
         categories = self.coco.loadCats(self.coco.getCatIds())
         categories.sort(key=lambda x: x['id'])
 
