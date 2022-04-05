@@ -14,29 +14,20 @@ from efficientdet.utils import BBoxTransform, ClipBoxes
 from utils.utils import preprocess, invert_affine, postprocess, preprocess_video
 
 # Video's path
-video_src = 'videotest.mp4'  # set int to use webcam, set str to read from a video file
+video_src = 0  # set int to use webcam, set str to read from a video file
 
-compound_coef = 0
+compound_coef = 2
 force_input_size = None  # set None to use default size
 
 threshold = 0.2
 iou_threshold = 0.2
 
-use_cuda = True
+use_cuda = False
 use_float16 = False
 cudnn.fastest = True
 cudnn.benchmark = True
 
-obj_list = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-            'fire hydrant', '', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
-            'cow', 'elephant', 'bear', 'zebra', 'giraffe', '', 'backpack', 'umbrella', '', '', 'handbag', 'tie',
-            'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
-            'skateboard', 'surfboard', 'tennis racket', 'bottle', '', 'wine glass', 'cup', 'fork', 'knife', 'spoon',
-            'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut',
-            'cake', 'chair', 'couch', 'potted plant', 'bed', '', 'dining table', '', '', 'toilet', '', 'tv',
-            'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
-            'refrigerator', '', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
-            'toothbrush']
+obj_list = ['bag', 'belt', 'boots', 'footwear', 'outer', 'dress', 'sunglasses', 'pants', 'top', 'shorts', 'skirt', 'headwear', 'scarf & tie']
 
 # tf bilinear interpolation is different from any other's, just make do
 input_sizes = [512, 640, 768, 896, 1024, 1280, 1280, 1536, 1536]
@@ -44,7 +35,7 @@ input_size = input_sizes[compound_coef] if force_input_size is None else force_i
 
 # load model
 model = EfficientDetBackbone(compound_coef=compound_coef, num_classes=len(obj_list))
-model.load_state_dict(torch.load(f'weights/efficientdet-d{compound_coef}.pth'))
+model.load_state_dict(torch.load(f'weights/efficientdet-d2_9_52260.pth', map_location="cpu"))
 model.requires_grad_(False)
 model.eval()
 
@@ -77,36 +68,42 @@ clipBoxes = ClipBoxes()
 # Video capture
 cap = cv2.VideoCapture(video_src)
 
+count = 0
+
 while True:
     ret, frame = cap.read()
     if not ret:
         break
-
+    
+    count += 1
     # frame preprocessing
-    ori_imgs, framed_imgs, framed_metas = preprocess_video(frame, max_size=input_size)
 
-    if use_cuda:
-        x = torch.stack([torch.from_numpy(fi).cuda() for fi in framed_imgs], 0)
-    else:
-        x = torch.stack([torch.from_numpy(fi) for fi in framed_imgs], 0)
 
-    x = x.to(torch.float32 if not use_float16 else torch.float16).permute(0, 3, 1, 2)
+    if count % 10 == 0:
+        ori_imgs, framed_imgs, framed_metas = preprocess_video(frame, max_size=input_size)
 
-    # model predict
-    with torch.no_grad():
-        features, regression, classification, anchors = model(x)
+        if use_cuda:
+            x = torch.stack([torch.from_numpy(fi).cuda() for fi in framed_imgs], 0)
+        else:
+            x = torch.stack([torch.from_numpy(fi) for fi in framed_imgs], 0)
 
-        out = postprocess(x,
-                        anchors, regression, classification,
-                        regressBoxes, clipBoxes,
-                        threshold, iou_threshold)
+        x = x.to(torch.float32 if not use_float16 else torch.float16).permute(0, 3, 1, 2)
 
-    # result
-    out = invert_affine(framed_metas, out)
-    img_show = display(out, ori_imgs)
+        # model predict
+        with torch.no_grad():
+            features, regression, classification, anchors = model(x)
+
+            out = postprocess(x,
+                            anchors, regression, classification,
+                            regressBoxes, clipBoxes,
+                            threshold, iou_threshold)
+
+        # result
+        out = invert_affine(framed_metas, out)
+        img_show = display(out, ori_imgs)
 
     # show frame by frame
-    cv2.imshow('frame',img_show)
+    cv2.imshow('frame',frame)
     if cv2.waitKey(1) & 0xFF == ord('q'): 
         break
 
